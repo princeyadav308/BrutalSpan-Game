@@ -408,7 +408,7 @@
 
     <!-- Audio elements -->
     <audio id="bgMusic" loop>
-        <source src="dynamic-fast-dynamic-percussion-music-358361.mp3" type="audio/mpeg">
+        <source src="assets/audio/background-music.mp3" type="audio/mpeg">
     </audio>
 
     <div id="app">
@@ -421,7 +421,7 @@
             <!-- Video Section -->
             <div class="video-container">
                 <video id="introVideo" autoplay muted playsinline>
-                    <source src="Superior chimpanzee memory.mp4" type="video/mp4">
+                    <source src="assets/video/intro-video.mp4" type="video/mp4">
                 </video>
             </div>
             <div class="challenge-text">Can you beat this guy?</div>
@@ -581,7 +581,7 @@
         // Parse Roast.md file
         async function loadRoasts() {
             try {
-                const response = await fetch('Roast.md');
+                const response = await fetch('src/data/Roast.md');
                 const text = await response.text();
                 const lines = text.split('\n');
 

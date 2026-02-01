@@ -1,6 +1,6 @@
 [[redirects]]
   from = "/*"
-  to = "/game.html"
+  to = "/index.html"
   status = 200
 
 [build]
