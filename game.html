@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>RECALL // NEON</title>
+    <style>
+        :root {
+            --bg: #050505;
+            --surf: #111;
+            --brd: #222;
+            --txt: #fff;
+            --dim: #666;
+            --neon-green: #39ff14;
+            --neon-red: #ff3131;
+            --neon-blue: #00f3ff;
+        }
+
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            outline: none;
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--txt);
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* --- DYNAMIC BACKGROUND & EFFECTS --- */
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at center, #111 0%, #000 100%);
+            z-index: -1;
+        }
+
+        .scanlines {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%);
+            background-size: 100% 4px;
+            z-index: 100;
+            pointer-events: none;
+        }
+
+        #app {
+            width: 100%;
+            max-width: 380px;
+            padding: 30px;
+            z-index: 10;
+            text-align: center;
+        }
+
+        /* --- GAME UI --- */
+        .lvl-header {
+            font-size: 10px;
+            letter-spacing: 4px;
+            color: var(--neon-blue);
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            text-shadow: 0 0 5px var(--neon-blue);
+        }
+
+        #timer-container {
+            width: 100%;
+            height: 3px;
+            background: #111;
+            margin-bottom: 40px;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: inset 0 0 5px #000;
+        }
+
+        #timer-bar {
+            width: 100%;
+            height: 100%;
+            background: var(--neon-blue);
+            box-shadow: 0 0 10px var(--neon-blue);
+            transform-origin: left;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+        }
+
+        .tile {
+            aspect-ratio: 1;
+            background: var(--surf);
+            border: 2px solid var(--brd);
+            border-radius: 12px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 28px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            color: var(--txt);
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+        }
+
+        .tile:active {
+            transform: scale(0.92);
+            background: #1a1a1a;
+        }
+
+        .tile.hidden-num {
+            color: transparent;
+            text-shadow: none;
+            border-color: #1a1a1a;
+        }
+
+        .tile.correct {
+            border-color: var(--neon-green);
+            color: var(--neon-green);
+            box-shadow: 0 0 20px var(--neon-green), 0 0 40px rgba(57, 255, 20, 0.4);
+            background: rgba(57, 255, 20, 0.1);
+            animation: correctPulse 0.3s ease-out;
+        }
+
+        @keyframes correctPulse {
+            0% {
+                transform: scale(1);
+                box-shadow: 0 0 20px var(--neon-green);
+            }
+
+            50% {
+                transform: scale(1.05);
+                box-shadow: 0 0 40px var(--neon-green), 0 0 60px rgba(57, 255, 20, 0.6);
+            }
+
+            100% {
+                transform: scale(1);
+                box-shadow: 0 0 20px var(--neon-green);
+            }
+        }
+
+        /* --- SCREENS --- */
+        .roast-box {
+            min-height: 200px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            padding: 0 10px;
+        }
+
+        .roast-text {
+            font-size: 18px;
+            line-height: 1.5;
+            color: #ccc;
+            opacity: 0;
+            transition: 0.5s;
+            font-weight: 500;
+        }
+
+        .roast-text.visible {
+            opacity: 1;
+        }
+
+        .meme-frame {
+            width: 280px;
+            height: 280px;
+            margin: 20px auto 0;
+            border-radius: 12px;
+            background-size: cover;
+            background-position: center;
+            filter: grayscale(0);
+            opacity: 0;
+            transition: opacity 0.8s, filter 0.8s;
+            border: 2px solid var(--neon-blue);
+            display: none;
+            box-shadow: 0 0 20px rgba(0, 243, 255, 0.3);
+        }
+
+        button.glow-btn {
+            background: transparent;
+            border: 2px solid var(--neon-blue);
+            color: var(--neon-blue);
+            padding: 15px;
+            width: 100%;
+            border-radius: 8px;
+            font-weight: 700;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-top: 30px;
+            box-shadow: 0 0 10px rgba(0, 243, 255, 0.2);
+            transition: 0.3s;
+        }
+
+        button.glow-btn:hover {
+            background: var(--neon-blue);
+            color: #000;
+            box-shadow: 0 0 20px var(--neon-blue);
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* Setup visuals */
+        .opt-label {
+            font-size: 10px;
+            color: var(--dim);
+            margin: 20px 0 10px;
+            text-transform: uppercase;
+            text-align: left;
+            display: block;
+        }
+
+        .seg-ctrl {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 20px;
+        }
+
+        .seg {
+            flex: 1;
+            padding: 12px;
+            background: #111;
+            border: 1px solid #222;
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+            color: #444;
+        }
+
+        .seg.active {
+            border-color: var(--neon-blue);
+            color: var(--neon-blue);
+            background: rgba(0, 243, 255, 0.05);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="scanlines"></div>
+
+    <div id="app">
+        <div id="setup">
+            <h1 style="letter-spacing: 8px; font-weight: 900; color: var(--txt);">RECALL</h1>
+            <span class="opt-label">Judgment Intensity</span>
+            <div class="seg-ctrl">
+                <div class="seg" onclick="setOpt('lvl', 1)">Gentle</div>
+                <div class="seg active" onclick="setOpt('lvl', 2)">Honest</div>
+                <div class="seg" onclick="setOpt('lvl', 3)">Brutal</div>
+            </div>
+            <span class="opt-label">Language</span>
+            <div class="seg-ctrl">
+                <div class="seg active" onclick="setOpt('lang', 'en')">English</div>
+                <div class="seg" onclick="setOpt('lang', 'hi')">Hinglish</div>
+            </div>
+            <button class="glow-btn" onclick="start()">Initialize</button>
+        </div>
+
+        <div id="game" class="hidden">
+            <div class="lvl-header" id="lvl-tag">Level // 01</div>
+            <div id="timer-container">
+                <div id="timer-bar"></div>
+            </div>
+            <div class="grid" id="grid"></div>
+        </div>
+
+        <div id="fail" class="hidden">
+            <div class="roast-box">
+                <div id="roast-msg" class="roast-text"></div>
+                <div id="meme" class="meme-frame"></div>
+            </div>
+            <div id="stats" style="font-size: 12px; color: var(--dim); margin-top: 20px;"></div>
+            <button class="glow-btn" onclick="start()">Re-Try</button>
+        </div>
+    </div>
+
+    <script>
+        // Dynamic roast data - will be loaded from Roast.md
+        let ROASTS = {
+            english: [],
+            hinglish: [],
+            memes: []
+        };
+
+        let cfg = { lvl: 2, lang: 'en', streak: 0 };
+        let g = { cur: 1, exp: 1, data: [], state: 'IDLE', timer: null, usedRoasts: new Set(), usedMemes: new Set() };
+
+        // Parse Roast.md file
+        async function loadRoasts() {
+            try {
+                const response = await fetch('Roast.md');
+                const text = await response.text();
+                const lines = text.split('\n');
+
+                let currentSection = null;
+                let inMemesSection = false;
+
+                for (let line of lines) {
+                    const trimmed = line.trim();
+
+                    // Detect section headers
+                    if (trimmed.toLowerCase().includes('english roast')) {
+                        currentSection = 'english';
+                        inMemesSection = false;
+                        continue;
+                    }
+
+                    if (trimmed.toLowerCase().includes('hinglish roast')) {
+                        currentSection = 'hinglish';
+                        inMemesSection = false;
+                        continue;
+                    }
+
+                    if (trimmed.toLowerCase().includes('memes link')) {
+                        inMemesSection = true;
+                        currentSection = null;
+                        continue;
+                    }
+
+                    // Extract roast lines
+                    if (currentSection && trimmed.length > 0) {
+                        if (!trimmed.startsWith('#') &&
+                            !trimmed.startsWith('---') &&
+                            !trimmed.startsWith('##') &&
+                            trimmed.length > 10) {
+                            ROASTS[currentSection].push(trimmed);
+                        }
+                    }
+
+                    // Extract meme URLs
+                    if (inMemesSection && trimmed.startsWith('http')) {
+                        ROASTS.memes.push(trimmed);
+                    }
+                }
+
+                console.log(`✓ Loaded ${ROASTS.english.length} English roasts`);
+                console.log(`✓ Loaded ${ROASTS.hinglish.length} Hinglish roasts`);
+                console.log(`✓ Loaded ${ROASTS.memes.length} memes`);
+            } catch (error) {
+                console.error('Failed to load roasts:', error);
+                // Fallback roasts
+                ROASTS.english = ["Your memory needs a serious upgrade."];
+                ROASTS.hinglish = ["Yaadaasht kamzor hai bhai."];
+                ROASTS.memes = ["https://media.giphy.com/media/9Y5BbDSkSTiY8/giphy.gif"];
+            }
+        }
+
+        // Load roasts when page loads
+        loadRoasts();
+
+        function setOpt(k, v) {
+            cfg[k === 'lvl' ? 'lvl' : 'lang'] = v;
+            const parent = k === 'lvl' ? document.querySelectorAll('.seg-ctrl')[0] : document.querySelectorAll('.seg-ctrl')[1];
+            parent.querySelectorAll('.seg').forEach((s, i) => s.classList.toggle('active', (k === 'lvl' ? i + 1 === v : (v === 'en' ? i === 0 : i === 1))));
+        }
+
+        function start() {
+            g.exp = 1; g.state = 'REVEAL';
+            document.getElementById('setup').classList.add('hidden');
+            document.getElementById('fail').classList.add('hidden');
+            document.getElementById('game').classList.remove('hidden');
+
+            render();
+        }
+
+        function render() {
+            const n = g.cur <= 3 ? 3 : g.cur <= 6 ? 4 : g.cur <= 10 ? 5 : g.cur <= 15 ? 6 : 7;
+            const t = Math.max(1200, 5000 - (g.cur * 200));
+            document.getElementById('lvl-tag').innerText = `Level // ${g.cur.toString().padStart(2, '0')}`;
+            const grid = document.getElementById('grid');
+            grid.innerHTML = ''; g.data = Array(9).fill(null);
+            let pos = [...Array(9).keys()].sort(() => Math.random() - 0.5);
+            for (let i = 0; i < n; i++) g.data[pos[i]] = i + 1;
+
+            g.data.forEach((num, i) => {
+                const d = document.createElement('div');
+                d.className = 'tile'; d.innerText = num || '';
+                d.onclick = () => tap(i);
+                grid.appendChild(d);
+            });
+
+            const bar = document.getElementById('timer-bar');
+            bar.style.transition = 'none'; bar.style.transform = 'scaleX(1)';
+            setTimeout(() => { bar.style.transition = `transform ${t}ms linear`; bar.style.transform = 'scaleX(0)'; }, 50);
+
+            g.timer = setTimeout(() => {
+                g.state = 'INPUT';
+                Array.from(grid.children).forEach(el => { if (el.innerText) el.classList.add('hidden-num'); });
+            }, t);
+        }
+
+        function tap(i) {
+            if (g.state !== 'INPUT') return;
+            if (g.data[i] === g.exp) {
+                const tile = document.getElementById('grid').children[i];
+                tile.classList.remove('hidden-num'); tile.classList.add('correct');
+                if (g.exp === g.data.filter(x => x).length) {
+                    g.cur++; cfg.streak = 0; clearTimeout(g.timer); start();
+                } else g.exp++;
+            } else fail();
+        }
+
+        function fail() {
+            g.state = 'FAIL'; cfg.streak++; clearTimeout(g.timer);
+
+            document.getElementById('game').classList.add('hidden');
+            document.getElementById('fail').classList.remove('hidden');
+            const msg = document.getElementById('roast-msg');
+            const meme = document.getElementById('meme');
+            msg.classList.remove('visible');
+            meme.style.display = 'none';
+            meme.style.opacity = '0';
+
+            // PSYCHOLOGICAL PAUSE: Strict 0.5s delay before any text
+            setTimeout(() => {
+                // Select roast pool based on language
+                let roastPool = cfg.lang === 'hi' ? ROASTS.hinglish : ROASTS.english;
+
+                // Get unused roasts
+                let availableRoasts = roastPool.filter(r => !g.usedRoasts.has(r));
+                if (availableRoasts.length === 0) {
+                    g.usedRoasts.clear();
+                    availableRoasts = roastPool;
+                }
+
+                // Select random roast
+                let roastText = availableRoasts[Math.floor(Math.random() * availableRoasts.length)];
+                g.usedRoasts.add(roastText);
+
+                // Add streak prefix
+                if (cfg.streak >= 2) {
+                    const prefix = cfg.lang === 'hi' ? 'Phir se? ' : 'Again? ';
+                    roastText = prefix + roastText;
+                }
+
+                // LEVEL 11+ RULE: Strip all emojis for cold seriousness
+                if (g.cur >= 11) {
+                    roastText = roastText.replace(/[\u{1F600}-\u{1F64F}]|[\u{1F300}-\u{1F5FF}]|[\u{1F680}-\u{1F6FF}]|[\u{1F1E0}-\u{1F1FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]|[\u{1F900}-\u{1F9FF}]|[\u{1F018}-\u{1F270}]|[\u{238C}-\u{2454}]|[\u{20D0}-\u{20FF}]/gu, '');
+                }
+
+                // Display roast text
+                msg.innerText = roastText;
+                msg.classList.add('visible');
+                document.getElementById('stats').innerText = `Best: ${Math.max(g.cur, localStorage.getItem('recall-best') || 0)} | Streak: ${cfg.streak}`;
+
+                // Show meme after delay (on any wrong attempt)
+                setTimeout(() => {
+                    // Get random meme
+                    let availableMemes = ROASTS.memes.filter(m => !g.usedMemes.has(m));
+                    if (availableMemes.length === 0) {
+                        g.usedMemes.clear();
+                        availableMemes = ROASTS.memes;
+                    }
+
+                    if (availableMemes.length > 0) {
+                        const selectedMeme = availableMemes[Math.floor(Math.random() * availableMemes.length)];
+                        g.usedMemes.add(selectedMeme);
+
+                        // Add meme intro message
+                        const memeIntro = cfg.lang === 'hi'
+                            ? '\n\nRuko ek perfect meme tumhare liye mere taraf se! 😏'
+                            : '\n\nWait I\'ve got a perfect meme for you! 😏';
+
+                        msg.innerText += memeIntro;
+
+                        // Show meme
+                        setTimeout(() => {
+                            meme.style.backgroundImage = `url(${selectedMeme})`;
+                            meme.style.display = 'block';
+
+                            setTimeout(() => {
+                                meme.style.opacity = '1';
+                                meme.style.filter = 'grayscale(0)';
+                            }, 100);
+                        }, 1000); // 1 second delay before showing meme
+                    }
+                }, 500); // 0.5s delay before meme intro
+            }, 500); // 0.5s delay for initial roast
+        }
+    </script>
+</body>
+
+</html>
